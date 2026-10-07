@@ -65,89 +65,130 @@ class Battleship:
         )
 
     def show(self):
-        print("\nYour shots are coordinates like 2,3.")
-        print("Enemy ship cells remaining:", self.enemy.remaining_cells())
+        print("\n" + "=" * 40)
+        print("BATTLESHIP")
+        print("=" * 40)
 
-        print("\nEnemy fleet:")
+        print("\nYour shots are entered as row,column.")
+        print("Example: 2,3")
+        print("Type q to quit.")
+
+        print(
+            "\nEnemy ship cells remaining:",
+            self.enemy.remaining_cells(),
+        )
+
+        print("\nEnemy fleet status:")
+
         for name, info in self.enemy.ship_status().items():
-            state = (
-                "SUNK"
-                if info["sunk"]
-                else f"{info['hits']}/{info['size']} hit"
-            )
+            if info["sunk"]:
+                state = "SUNK"
+            else:
+                state = f"{info['hits']}/{info['size']} hits"
+
             print(f"  {name}: {state}")
 
+    def get_player_shot(self):
+        raw = input("\nYour shot > ").strip().lower()
+
+        if raw == "q":
+            return "quit", None
+
+        try:
+            r, c = map(int, raw.split(","))
+        except ValueError:
+            print("Invalid coordinate. Use row,column, for example 2,3.")
+            return "invalid", None
+
+        pos = (r - 1, c - 1)
+
+        if not (
+            0 <= pos[0] < Board.SIZE
+            and 0 <= pos[1] < Board.SIZE
+        ):
+            print(
+                f"Outside board. Use rows and columns from "
+                f"1 to {Board.SIZE}."
+            )
+            return "invalid", None
+
+        return "valid", pos
+
+    def handle_player_shot(self, pos):
+        result = self.enemy.fire(pos)
+
+        if result == "repeat":
+            print("Already fired there.")
+            return False
+
+        if result == "miss":
+            print("MISS!")
+
+        elif result == "hit":
+            print("HIT!")
+
+        elif result.startswith("sunk:"):
+            ship_name = result.split(":", 1)[1]
+            print(f"HIT! You sank the {ship_name}.")
+
+        return True
+
+    def handle_ai_turn(self):
+        ai_pos = self.ai.choose()
+
+        if ai_pos is None:
+            print("AI has no remaining choices.")
+            return False
+
+        row = ai_pos[0] + 1
+        column = ai_pos[1] + 1
+
+        print(f"\nAI fired at {row},{column}")
+
+        result = self.player.fire(ai_pos)
+
+        if result == "miss":
+            print("AI MISS!")
+
+        elif result == "hit":
+            print("AI HIT!")
+
+        elif result.startswith("sunk:"):
+            ship_name = result.split(":", 1)[1]
+            print(f"AI HIT! It sank your {ship_name}.")
+
+        self.ai.register_result(ai_pos, result)
+
+        return True
+
     def run(self):
-        print("Battleship")
+        print("\nWelcome to Battleship!")
 
         while True:
             self.show()
 
-            raw = input("> ").strip().lower()
+            status, pos = self.get_player_shot()
 
-            if raw == "q":
+            if status == "quit":
                 print("Goodbye!")
                 return
 
-            try:
-                r, c = map(int, raw.split(","))
-                pos = (r - 1, c - 1)
-            except ValueError:
-                print("Use row,col.")
+            if status == "invalid":
                 continue
 
-            if not (
-                0 <= pos[0] < Board.SIZE
-                and 0 <= pos[1] < Board.SIZE
-            ):
-                print("Outside board.")
+            if not self.handle_player_shot(pos):
                 continue
-
-            result = self.enemy.fire(pos)
-
-            if result == "repeat":
-                print("Already fired there.")
-                continue
-
-            if result == "miss":
-                print("MISS!")
-
-            elif result == "hit":
-                print("HIT!")
-
-            elif result.startswith("sunk:"):
-                ship_name = result.split(":", 1)[1]
-                print(f"HIT! You sank the {ship_name}.")
 
             if self.enemy.all_sunk():
-                print("You sank the entire fleet. You win!")
+                print("\nYou sank the entire enemy fleet!")
+                print("YOU WIN!")
                 return
 
-            ai_pos = self.ai.choose()
-
-            if ai_pos is None:
-                print("AI has no remaining choices.")
+            if not self.handle_ai_turn():
+                print("The AI has no legal shots remaining.")
                 return
-
-            print(
-                "AI fired at "
-                f"{ai_pos[0] + 1},{ai_pos[1] + 1}"
-            )
-
-            ai_result = self.player.fire(ai_pos)
-
-            if ai_result == "miss":
-                print("AI missed.")
-
-            elif ai_result == "hit":
-                print("AI scored a hit.")
-
-            elif ai_result.startswith("sunk:"):
-                ship_name = ai_result.split(":", 1)[1]
-                print(f"AI sank your {ship_name}.")
-
-            self.ai.register_result(ai_pos, ai_result)
 
             if self.player.all_sunk():
-                print("The AI sank your entire fleet. You lose!")
+                print("\nThe AI sank your entire fleet.")
+                print("YOU LOSE!")
                 return
