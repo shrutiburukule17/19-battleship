@@ -12,79 +12,42 @@ class Battleship:
     def _setup(self):
         self.player.place_ship(
             "Carrier",
-            {
-                (0, 0),
-                (0, 1),
-                (0, 2),
-                (0, 3),
-                (0, 4),
-            },
+            {(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)},
         )
 
         self.player.place_ship(
             "Battleship",
-            {
-                (2, 0),
-                (3, 0),
-                (4, 0),
-                (5, 0),
-            },
+            {(2, 0), (3, 0), (4, 0), (5, 0)},
         )
 
         self.player.place_ship(
             "Cruiser",
-            {
-                (2, 2),
-                (2, 3),
-                (2, 4),
-            },
+            {(2, 2), (2, 3), (2, 4)},
         )
 
         self.player.place_ship(
             "Submarine",
-            {
-                (4, 2),
-                (4, 3),
-                (4, 4),
-            },
+            {(4, 2), (4, 3), (4, 4)},
         )
 
         self.player.place_ship(
             "Destroyer",
-            {
-                (1, 5),
-                (2, 5),
-            },
+            {(1, 5), (2, 5)},
         )
 
         self.enemy.place_ship(
             "Carrier",
-            {
-                (0, 1),
-                (1, 1),
-                (2, 1),
-                (3, 1),
-                (4, 1),
-            },
+            {(0, 1), (1, 1), (2, 1), (3, 1), (4, 1)},
         )
 
         self.enemy.place_ship(
             "Battleship",
-            {
-                (0, 3),
-                (1, 3),
-                (2, 3),
-                (3, 3),
-            },
+            {(0, 3), (1, 3), (2, 3), (3, 3)},
         )
 
         self.enemy.place_ship(
             "Cruiser",
-            {
-                (4, 3),
-                (4, 4),
-                (4, 5),
-            },
+            {(4, 3), (4, 4), (4, 5)},
         )
 
         self.enemy.place_ship(
@@ -98,10 +61,7 @@ class Battleship:
 
         self.enemy.place_ship(
             "Destroyer",
-            {
-                (5, 0),
-                (5, 1),
-            },
+            {(5, 0), (5, 1)},
         )
 
     def show(self):
@@ -110,7 +70,11 @@ class Battleship:
 
         print("\nEnemy fleet:")
         for name, info in self.enemy.ship_status().items():
-            state = "SUNK" if info["sunk"] else f"{info['hits']}/{info['size']} hit"
+            state = (
+                "SUNK"
+                if info["sunk"]
+                else f"{info['hits']}/{info['size']} hit"
+            )
             print(f"  {name}: {state}")
 
     def run(self):
@@ -172,10 +136,7 @@ class Battleship:
 
             ai_result = self.player.fire(ai_pos)
 
-            if ai_result == "repeat":
-                print("AI attempted a repeated shot.")
-
-            elif ai_result == "miss":
+            if ai_result == "miss":
                 print("AI missed.")
 
             elif ai_result == "hit":
@@ -184,6 +145,8 @@ class Battleship:
             elif ai_result.startswith("sunk:"):
                 ship_name = ai_result.split(":", 1)[1]
                 print(f"AI sank your {ship_name}.")
+
+            self.ai.register_result(ai_pos, ai_result)
 
             if self.player.all_sunk():
                 print("The AI sank your entire fleet. You lose!")
